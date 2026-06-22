@@ -1,0 +1,39 @@
+{
+  "classes": [
+    "Cleaning",
+    "Occupied",
+    "Vacant"
+  ],
+  "feature_columns": [
+    "pir_motion",
+    "adults",
+    "children",
+    "guest_count",
+    "active_guest",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "Total Nights",
+    "Total Amount",
+    "Stay_Duration",
+    "price_per_night",
+    "room_type_Deluxe",
+    "room_type_Standard",
+    "room_type_Suite",
+    "room_type_Unknown"
+  ],
+  "seq_len": 12,
+  "horizon_steps": 12,
+  "horizon_minutes": 60,
+  "input_dim": 17,
+  "room_types": [
+    "Deluxe",
+    "Standard",
+    "Suite",
+    "Unknown"
+  ],
+  "model_file": "occupancy_transformer.pt",
+  "report_file": "occupancy_transformer_report.txt",
+  "confusion_matrix_file": "occupancy_transformer_confusion_matrix.csv"
+}

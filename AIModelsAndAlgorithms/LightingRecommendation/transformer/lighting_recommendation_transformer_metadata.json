@@ -1,0 +1,167 @@
+{
+  "model_type": "transformer_regressor",
+  "task": "lighting_recommendation",
+  "prediction_horizon_minutes": 5,
+  "sequence_length": 12,
+  "stride": 3,
+  "feature_names": [
+    "value_scaled",
+    "pir_motion",
+    "n_occupants_scaled",
+    "active_actors_scaled",
+    "hurry_morning",
+    "lazy_day",
+    "forgetful",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "lamp_location=bed_left",
+    "lamp_location=bed_right",
+    "lamp_location=cabinet",
+    "lamp_location=closet",
+    "lamp_location=corridor_left",
+    "lamp_location=corridor_right",
+    "lamp_location=dinner_table",
+    "lamp_location=hidden_top",
+    "lamp_location=none",
+    "lamp_location=shower",
+    "lamp_location=sink",
+    "lamp_location=table",
+    "lamp_location=Unknown",
+    "reservation_active=No",
+    "reservation_active=Yes",
+    "reservation_active=Unknown",
+    "occupancy_prediction=Cleaning",
+    "occupancy_prediction=Occupied",
+    "occupancy_prediction=Vacant",
+    "occupancy_prediction=Unknown",
+    "lighting_persona_prediction=Balanced",
+    "lighting_persona_prediction=Housekeeping",
+    "lighting_persona_prediction=NightFocused",
+    "lighting_persona_prediction=Routine",
+    "lighting_persona_prediction=StaticBright",
+    "lighting_persona_prediction=StaticDim",
+    "lighting_persona_prediction=Unknown"
+  ],
+  "base_numeric_cols": [
+    "value_scaled",
+    "pir_motion",
+    "n_occupants_scaled",
+    "active_actors_scaled",
+    "hurry_morning",
+    "lazy_day",
+    "forgetful",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos"
+  ],
+  "categorical_cols": [
+    "lamp_location",
+    "reservation_active",
+    "occupancy_prediction",
+    "lighting_persona_prediction"
+  ],
+  "category_values": {
+    "lamp_location": [
+      "bed_left",
+      "bed_right",
+      "cabinet",
+      "closet",
+      "corridor_left",
+      "corridor_right",
+      "dinner_table",
+      "hidden_top",
+      "none",
+      "shower",
+      "sink",
+      "table",
+      "Unknown"
+    ],
+    "reservation_active": [
+      "No",
+      "Yes",
+      "Unknown"
+    ],
+    "occupancy_prediction": [
+      "Cleaning",
+      "Occupied",
+      "Vacant",
+      "Unknown"
+    ],
+    "lighting_persona_prediction": [
+      "Balanced",
+      "Housekeeping",
+      "NightFocused",
+      "Routine",
+      "StaticBright",
+      "StaticDim",
+      "Unknown"
+    ]
+  },
+  "level_min": 0,
+  "level_max": 80.0,
+  "target": "recommended_level",
+  "input_dim": 38,
+  "d_model": 96,
+  "n_heads": 4,
+  "n_layers": 2,
+  "dim_feedforward": 192,
+  "dropout": 0.15,
+  "seed": 42,
+  "max_rows": null,
+  "max_sequences": 500000,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.0013689980987738818,
+      "val_loss": 0.0005531084961444139
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.0004423249769117683,
+      "val_loss": 0.00039304574493318796
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.0003341643717419356,
+      "val_loss": 0.0003258158621797338
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.00028634863556362686,
+      "val_loss": 0.0002699461175268516
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.0002633505612891167,
+      "val_loss": 0.00024481839237734676
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.0002482272015698254,
+      "val_loss": 0.00026292231861967596
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.00023702255059033633,
+      "val_loss": 0.00024374485074542463
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.00022664371881633998,
+      "val_loss": 0.0003231908486317843
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.00022144628761801868,
+      "val_loss": 0.00023882939397823065
+    }
+  ],
+  "metrics": {
+    "mae": 1.0265400409698486,
+    "rmse": 1.880132960731093,
+    "r2": 0.9846152663230896
+  }
+}

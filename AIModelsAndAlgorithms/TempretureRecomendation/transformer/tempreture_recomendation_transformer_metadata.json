@@ -1,0 +1,285 @@
+{
+  "model_type": "transformer_regressor",
+  "task": "tempreture_recomendation",
+  "prediction_horizon_minutes": 5,
+  "target": "recommended_setpoint",
+  "setpoint_min": 16.0,
+  "setpoint_max": 28.0,
+  "sequence_length": 24,
+  "stride": 3,
+  "feature_names": [
+    "floor_scaled",
+    "size_scaled",
+    "outside_temp_scaled",
+    "room_temp_scaled",
+    "setpoint_scaled",
+    "ideal_temp_scaled",
+    "temp_error_scaled",
+    "comfort_error_scaled",
+    "pir_motion",
+    "has_guest",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "facade=East",
+    "facade=North",
+    "facade=South",
+    "facade=West",
+    "facade=Unknown",
+    "room_type=Deluxe",
+    "room_type=Standard",
+    "room_type=Suite",
+    "room_type=Unknown",
+    "hvac_mode=cooling",
+    "hvac_mode=heating",
+    "hvac_mode=off",
+    "hvac_mode=Unknown",
+    "occupant_state=active",
+    "occupant_state=cleaning",
+    "occupant_state=out",
+    "occupant_state=preconditioning",
+    "occupant_state=sleeping",
+    "occupant_state=vacant",
+    "occupant_state=Unknown",
+    "pir_persona=Explorer",
+    "pir_persona=Napper",
+    "pir_persona=NightOwl",
+    "pir_persona=Standard",
+    "pir_persona=Unknown",
+    "occupancy_prediction=Cleaning",
+    "occupancy_prediction=Occupied",
+    "occupancy_prediction=Vacant",
+    "occupancy_prediction=Unknown",
+    "temperature_persona_prediction=AlwaysOnComfort",
+    "temperature_persona_prediction=EnergySaver",
+    "temperature_persona_prediction=Housekeeping",
+    "temperature_persona_prediction=Preconditioning",
+    "temperature_persona_prediction=Reactive",
+    "temperature_persona_prediction=Unknown"
+  ],
+  "base_numeric_cols": [
+    "floor_scaled",
+    "size_scaled",
+    "outside_temp_scaled",
+    "room_temp_scaled",
+    "setpoint_scaled",
+    "ideal_temp_scaled",
+    "temp_error_scaled",
+    "comfort_error_scaled",
+    "pir_motion",
+    "has_guest",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos"
+  ],
+  "categorical_cols": [
+    "facade",
+    "room_type",
+    "hvac_mode",
+    "occupant_state",
+    "pir_persona",
+    "occupancy_prediction",
+    "temperature_persona_prediction"
+  ],
+  "category_values": {
+    "facade": [
+      "East",
+      "North",
+      "South",
+      "West",
+      "Unknown"
+    ],
+    "room_type": [
+      "Deluxe",
+      "Standard",
+      "Suite",
+      "Unknown"
+    ],
+    "hvac_mode": [
+      "cooling",
+      "heating",
+      "off",
+      "Unknown"
+    ],
+    "occupant_state": [
+      "active",
+      "cleaning",
+      "out",
+      "preconditioning",
+      "sleeping",
+      "vacant",
+      "Unknown"
+    ],
+    "pir_persona": [
+      "Explorer",
+      "Napper",
+      "NightOwl",
+      "Standard",
+      "Unknown"
+    ],
+    "occupancy_prediction": [
+      "Cleaning",
+      "Occupied",
+      "Vacant",
+      "Unknown"
+    ],
+    "temperature_persona_prediction": [
+      "AlwaysOnComfort",
+      "EnergySaver",
+      "Housekeeping",
+      "Preconditioning",
+      "Reactive",
+      "Unknown"
+    ]
+  },
+  "persona_policy": {
+    "AlwaysOnComfort": {
+      "cooling": 22.5,
+      "heating": 22.0,
+      "idle": 22.5
+    },
+    "EnergySaver": {
+      "cooling": 26.0,
+      "heating": 19.0,
+      "idle": 24.0
+    },
+    "Reactive": {
+      "cooling": 23.5,
+      "heating": 21.5,
+      "idle": 23.0
+    },
+    "Preconditioning": {
+      "cooling": 23.0,
+      "heating": 21.0,
+      "idle": 23.0
+    },
+    "Housekeeping": {
+      "cooling": 24.0,
+      "heating": 20.0,
+      "idle": 23.0
+    },
+    "Unknown": {
+      "cooling": 24.0,
+      "heating": 20.0,
+      "idle": 23.0
+    }
+  },
+  "input_dim": 49,
+  "d_model": 96,
+  "n_heads": 4,
+  "n_layers": 2,
+  "dim_feedforward": 192,
+  "dropout": 0.15,
+  "seed": 42,
+  "max_rows": null,
+  "max_sequences": 500000,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.003235995531976223,
+      "val_loss": 0.001467874771542847
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.0012766763937100767,
+      "val_loss": 0.0011106679260544478
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.0011288972607068717,
+      "val_loss": 0.0011227027206495404
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.001032862619329244,
+      "val_loss": 0.0023255490375310183
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.0009602000888902694,
+      "val_loss": 0.001036414834931493
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.0008935651453956962,
+      "val_loss": 0.0008861128940619528
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.0008365702704712748,
+      "val_loss": 0.0009945655012875796
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.0008379319784790277,
+      "val_loss": 0.0009186754885688424
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.000782847385276109,
+      "val_loss": 0.0008525677434541285
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.0007445063447020948,
+      "val_loss": 0.0008022746938094496
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.0007371837552636862,
+      "val_loss": 0.0006929093489423394
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.0007222357838414609,
+      "val_loss": 0.0006749492742680013
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.0006895374847203493,
+      "val_loss": 0.0007420544065535068
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.000676336264219135,
+      "val_loss": 0.0006626442145183682
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.0006382630674354732,
+      "val_loss": 0.0007292963974550366
+    },
+    {
+      "epoch": 16,
+      "train_loss": 0.0006547710166685283,
+      "val_loss": 0.0005971004529856146
+    },
+    {
+      "epoch": 17,
+      "train_loss": 0.000620686672180891,
+      "val_loss": 0.0008809398182667792
+    },
+    {
+      "epoch": 18,
+      "train_loss": 0.0006179224939458072,
+      "val_loss": 0.000791338415723294
+    },
+    {
+      "epoch": 19,
+      "train_loss": 0.0005945015690475702,
+      "val_loss": 0.0005555333130434155
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.0006197634143102914,
+      "val_loss": 0.0011441278532147408
+    }
+  ],
+  "metrics": {
+    "mae": 0.21713000535964966,
+    "rmse": 0.30966111785807504,
+    "r2": 0.9619849920272827
+  }
+}

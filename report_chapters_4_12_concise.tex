@@ -1,0 +1,322 @@
+\chapter{Occupancy Prediction}
+\label{chap:occupancy-prediction}
+
+Occupancy prediction is used to estimate whether a hotel room is
+\textit{Occupied}, \textit{Vacant}, or under \textit{Cleaning}. This
+information supports later lighting and HVAC decisions. For example, a vacant
+room can use more energy-efficient settings, whereas an occupied room should
+give greater priority to guest comfort.
+
+\section{Input Data and Features}
+
+The occupancy models use PIR motion records together with reservation and guest
+information. Important inputs include recent motion activity, number of adults
+and children, active reservation status, room type, hour of day, and day of
+week. Time values are represented cyclically so that neighboring periods, such
+as 23:00 and 00:00, remain close to each other.
+
+The prediction target is the room state one hour in the future. Since sensor
+records are sampled every five minutes, the model uses 12 samples to represent
+one hour.
+
+\section{Implemented Models}
+
+Two occupancy models are available. The Random Forest model uses engineered
+tabular features, including recent motion statistics and reservation context.
+The Transformer model processes a sequence of recent room observations and
+learns temporal relationships between them.
+
+The Flask endpoint \texttt{/api/predict\_occupancy} returns the predicted
+class, confidence score, class probabilities, and diagnostic values such as
+motion rate. The user interface allows the Random Forest or Transformer model
+to be selected.
+
+\section{Performance}
+
+The Random Forest achieved 98.9\% accuracy, while the Transformer achieved
+98.8\%. Both models performed strongly for Occupied and Vacant rooms.
+Cleaning was more difficult because it has considerably fewer examples in the
+dataset.
+
+
+\chapter{Guest Persona Classification}
+\label{chap:persona-classification}
+
+Guest persona classification identifies repeated lighting and temperature
+preferences. The predicted persona is used as contextual information by the
+recommendation systems.
+
+\section{Lighting Personas}
+
+The lighting personas used by the application are:
+
+\begin{itemize}
+    \item \textit{Balanced}: prefers moderate lighting that changes with
+    activity and time;
+    \item \textit{Routine}: follows repeated daily lighting patterns;
+    \item \textit{StaticBright}: generally prefers high brightness;
+    \item \textit{StaticDim}: generally prefers low brightness;
+    \item \textit{NightFocused}: uses lighting mainly during evening and night;
+    \item \textit{Housekeeping}: uses bright task-oriented lighting; and
+    \item \textit{Unknown}: does not match a known pattern or has insufficient
+    history.
+\end{itemize}
+
+Lighting persona prediction uses lamp levels, time-of-day patterns, PIR motion,
+occupant counts, and the proportion of time that lamps remain active. A Random
+Forest model uses daily summary features, while a Transformer analyzes a
+complete sequence of five-minute lighting observations.
+
+\section{Temperature Personas}
+
+The temperature personas are AlwaysOnComfort, EnergySaver, Reactive,
+Preconditioning, and Housekeeping. They represent different relationships
+between comfort, HVAC operation, room conditions, and energy use.
+
+The temperature persona model uses recent room temperature, outside
+temperature, setpoint, HVAC mode, occupancy state, room characteristics, and
+PIR activity. It is implemented as a Transformer classifier.
+
+\section{Performance}
+
+The Random Forest lighting persona model achieved 88.5\% accuracy, while the
+lighting Transformer achieved 92.5\%. The temperature persona Transformer
+achieved 80.55\% accuracy.
+
+
+\chapter{Lighting Recommendation System}
+\label{chap:lighting-recommendation}
+
+The lighting recommendation system generates a brightness level for each lamp
+in a selected room. It combines predicted occupancy, lighting persona, current
+lamp state, reservation status, PIR activity, and recent lighting history.
+
+\section{Recommendation Process}
+
+The workflow consists of the following steps:
+
+\begin{enumerate}
+    \item The user selects a room, timestamp, history window, and model.
+    \item Occupancy and lighting persona are predicted.
+    \item Recent lighting measurements are retrieved from the database.
+    \item A recommended level is calculated for every lamp.
+    \item Hardware constraints are applied.
+    \item Current and recommended energy values are compared.
+\end{enumerate}
+
+The system distinguishes between dimmable LEDs and non-dimmable bulbs.
+Dimmable lamps may receive levels between 0 and 80, while non-dimmable lamps
+are restricted to off or full level. Lamps in vacant rooms are normally turned
+off, while Cleaning conditions may require brighter lighting.
+
+\section{Recommendation Models}
+
+The application supports a HistGradientBoosting regressor and a Transformer
+regressor. The first model uses current values and historical summary
+features. The Transformer processes a sequence of recent five-minute records
+and predicts the level for the next five-minute interval.
+
+The result includes the current and recommended level for each lamp, the model
+used, an explanation, and estimated energy savings. These values are displayed
+in the React dashboard as comparison bars and summary cards.
+
+
+\chapter{Temperature and HVAC Recommendation}
+\label{chap:temperature-recommendation}
+
+The HVAC recommendation system suggests a suitable room-temperature setpoint.
+Its goal is to reduce unnecessary energy consumption without ignoring guest
+comfort.
+
+\section{Recommendation Inputs}
+
+The model uses recent room temperature, outside temperature, current setpoint,
+ideal temperature, HVAC mode, room size, PIR motion, occupancy prediction, and
+temperature persona prediction. The input is represented as a sequence of 24
+five-minute observations, corresponding to two hours of recent history.
+
+\section{Setpoint Recommendation}
+
+The Transformer recommends a setpoint between
+$16\,^{\circ}\mathrm{C}$ and $28\,^{\circ}\mathrm{C}$. The result is rounded
+to the nearest $0.5\,^{\circ}\mathrm{C}$. Vacant rooms are allowed to use
+wider energy-saving settings, while the AlwaysOnComfort persona receives
+settings closer to the preferred comfort temperature.
+
+The API returns the current and recommended setpoints, the required action
+(\textit{raise}, \textit{lower}, or \textit{keep}), the expected HVAC mode,
+and an immediate energy estimate.
+
+\section{Performance}
+
+The temperature recommendation Transformer achieved a mean absolute error of
+$0.217\,^{\circ}\mathrm{C}$, an RMSE of
+$0.310\,^{\circ}\mathrm{C}$, and an $R^2$ score of 0.962.
+
+
+\chapter{Energy Consumption Analysis}
+\label{chap:energy-analysis}
+
+\section{Lighting Energy}
+
+Lighting power is calculated from voltage and current measurements stored in
+the dimmer reference file:
+
+\[
+    P = V \times I.
+\]
+
+Each lighting record represents a five-minute interval. Therefore, the energy
+of one sample is:
+
+\[
+    E_{\mathrm{sample}} = P \times \frac{5}{60}.
+\]
+
+The system compares actual lighting consumption with maximum-brightness and
+AI-recommended scenarios. It reports total energy, per-lamp consumption,
+dimmable-lamp savings, and percentage savings.
+
+\section{HVAC Energy}
+
+Direct HVAC meter readings are not available, so power is estimated using HVAC
+mode, room temperature, setpoint, outside temperature, room size, occupancy,
+and PIR activity. Heating and cooling use different rated-power limits.
+
+The estimated power of each sample is converted to energy using the same
+five-minute interval. Actual HVAC use is compared with a baseline in which the
+dominant heating or cooling mode operates continuously at rated power.
+
+The dashboard presents total HVAC energy, heating and cooling contributions,
+active operating time, baseline consumption, and estimated savings. HVAC
+results should be interpreted as estimates rather than direct measurements.
+
+
+\chapter{Machine Learning Models}
+\label{chap:machine-learning-models}
+
+The project combines classical machine-learning models and Transformer neural
+networks.
+
+\section{Classical Models}
+
+Random Forest classifiers are used for occupancy and lighting persona
+prediction. They are suitable for mixed numerical and categorical features and
+can model nonlinear relationships. HistGradientBoosting is used for lighting
+recommendation because it performs efficiently on large tabular datasets.
+
+\section{Transformer Models}
+
+Transformers are used for occupancy prediction, persona classification,
+lighting recommendation, and temperature recommendation. They process
+time-ordered sensor observations and learn relationships between different
+parts of a sequence.
+
+Classification models return class probabilities, while regression models
+return a lighting level or temperature setpoint. The trained models and their
+metadata are loaded by the Flask backend when a prediction is requested.
+
+\section{Evaluation Metrics}
+
+Classification performance is measured with accuracy, precision, recall,
+F1-score, and confusion matrices. Regression performance is measured with
+mean absolute error, root mean squared error, and $R^2$.
+
+Chronological splitting is used for most time-series tasks so that earlier
+observations are used for training and later observations are used for
+evaluation.
+
+
+\chapter{Results and Evaluation}
+\label{chap:results}
+
+\section{Model Results}
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of model evaluation results}
+\label{tab:project-model-results}
+\begin{tabular}{|p{4.0cm}|p{3.6cm}|p{5.0cm}|}
+\hline
+\textbf{Task} & \textbf{Model} & \textbf{Result} \\ \hline
+Occupancy prediction & Random Forest &
+Accuracy: 98.9\% \\ \hline
+Occupancy prediction & Transformer &
+Accuracy: 98.8\% \\ \hline
+Lighting persona & Random Forest &
+Accuracy: 88.5\% \\ \hline
+Lighting persona & Transformer &
+Accuracy: 92.5\% \\ \hline
+Temperature persona & Transformer &
+Accuracy: 80.55\% \\ \hline
+Lighting recommendation & HistGradientBoosting &
+MAE: 0.105; $R^2$: 0.999 \\ \hline
+Lighting recommendation & Transformer &
+MAE: 1.027; $R^2$: 0.985 \\ \hline
+Temperature recommendation & Transformer &
+MAE: $0.217\,^{\circ}\mathrm{C}$; $R^2$: 0.962 \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+The results show that the application can predict the main occupancy states
+and lighting personas with high accuracy. The Transformer improved lighting
+persona classification by learning daily temporal patterns. The occupancy
+models performed well overall, although the Cleaning class remained difficult
+because it was underrepresented.
+
+Both recommendation models reproduced their efficient target values with low
+error. The lighting models estimated a reduction of approximately 27--29\% in
+the brightness-level energy proxy. However, these targets are based on the
+project's energy-saving policies and should be validated in a real hotel.
+
+
+\chapter{Limitations and Future Improvements}
+\label{chap:limitations}
+
+The project has several limitations. PIR sensors measure movement rather than
+direct presence, so an inactive guest may appear absent. The Cleaning class
+contains relatively few observations, which reduces prediction quality for
+that state.
+
+Lighting and temperature recommendation targets are created from predefined
+comfort and efficiency policies. High model scores therefore show that the
+models learned these policies, but they do not prove that the policies are
+optimal for every guest.
+
+HVAC energy is estimated rather than measured with a dedicated meter. The
+model does not fully represent factors such as humidity, open windows, solar
+gain, insulation, or equipment efficiency.
+
+Future improvements could include:
+
+\begin{itemize}
+    \item collecting real hotel data over longer periods;
+    \item adding direct lighting and HVAC energy meters;
+    \item collecting guest comfort feedback;
+    \item improving minority-class occupancy prediction;
+    \item monitoring prediction confidence and data drift;
+    \item adding authentication and privacy controls; and
+    \item connecting recommendations to real-time IoT controllers.
+\end{itemize}
+
+
+\chapter{Conclusion}
+\label{chap:conclusion}
+
+This project presents an AI-driven system for smart hotel-room monitoring,
+personalization, and energy analysis. It combines hotel reservations, PIR
+motion, lighting measurements, temperature records, weather information, and
+electrical dimmer data.
+
+The application predicts room occupancy and guest personas before generating
+lighting and HVAC recommendations. It also compares actual, maximum, and
+recommended energy scenarios through an interactive React and Flask
+dashboard.
+
+The experimental results demonstrate strong performance for occupancy
+prediction, lighting persona classification, and recommendation tasks. The
+system shows how sensor data and machine learning can support more comfortable
+and energy-efficient hotel operation. Real-world measurements and guest
+feedback are still required before full deployment.

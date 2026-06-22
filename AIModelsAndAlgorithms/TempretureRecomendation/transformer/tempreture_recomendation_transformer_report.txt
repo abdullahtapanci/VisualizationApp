@@ -1,0 +1,10 @@
+rows: 5,212,900
+sequences: 500,000
+train sequences: 400,000
+validation sequences: 50,000
+test sequences: 50,000
+sequence length: 24
+prediction horizon minutes: 5
+MAE: 0.217
+RMSE: 0.310
+R2: 0.962

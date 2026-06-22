@@ -1,0 +1,8 @@
+rows: 5,212,900
+train rows: 4,170,400
+test rows: 1,042,500
+split time: 2022-05-30 19:15:00
+algorithm: HistGradientBoostingRegressor
+MAE: 0.010
+RMSE: 0.074
+R2: 0.999

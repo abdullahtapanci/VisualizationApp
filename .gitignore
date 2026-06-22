@@ -1,0 +1,51 @@
+# Python / env
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Large data / generated outputs
+Data/
+outputs/
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.zip
+
+# Trained model artifacts
+*.joblib
+*.pkl
+*.pt
+*.pth
+*.onnx
+*.h5
+*.keras
+
+# Logs / runtime files
+*.log
+*.pid
+server.log
+server.pid
+frontend/server.pid
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Build/cache
+__pycache__/
+.ipynb_checkpoints/
+.cache/
+tmp/
+temp/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

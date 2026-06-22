@@ -1,0 +1,19 @@
+rows: 2,225,132
+sequences: 500,000
+train sequences: 400,000
+validation sequences: 50,000
+test sequences: 50,000
+sequence length: 24
+accuracy: 0.8055
+
+                 precision    recall  f1-score   support
+
+AlwaysOnComfort     0.9669    0.8428    0.9006     15641
+    EnergySaver     0.6568    0.8928    0.7568     13163
+   Housekeeping     1.0000    1.0000    1.0000        44
+Preconditioning     1.0000    0.9895    0.9947        95
+       Reactive     0.8291    0.7220    0.7719     21057
+
+       accuracy                         0.8055     50000
+      macro avg     0.8906    0.8894    0.8848     50000
+   weighted avg     0.8273    0.8055    0.8088     50000

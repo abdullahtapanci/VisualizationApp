@@ -1,0 +1,207 @@
+{
+  "model_type": "transformer_classifier",
+  "task": "tempreture_persona_prediction",
+  "label_col": "ac_persona",
+  "classes": [
+    "AlwaysOnComfort",
+    "EnergySaver",
+    "Housekeeping",
+    "Preconditioning",
+    "Reactive"
+  ],
+  "class_to_id": {
+    "AlwaysOnComfort": 0,
+    "EnergySaver": 1,
+    "Housekeeping": 2,
+    "Preconditioning": 3,
+    "Reactive": 4
+  },
+  "sequence_length": 24,
+  "stride": 3,
+  "feature_names": [
+    "floor_scaled",
+    "size_scaled",
+    "outside_temp_scaled",
+    "room_temp_scaled",
+    "setpoint_scaled",
+    "ideal_temp_scaled",
+    "temp_error_scaled",
+    "comfort_error_scaled",
+    "pir_motion",
+    "has_guest",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "facade=East",
+    "facade=North",
+    "facade=South",
+    "facade=West",
+    "facade=Unknown",
+    "room_type=Deluxe",
+    "room_type=Standard",
+    "room_type=Suite",
+    "room_type=Unknown",
+    "hvac_mode=cooling",
+    "hvac_mode=heating",
+    "hvac_mode=off",
+    "hvac_mode=Unknown",
+    "occupant_state=active",
+    "occupant_state=cleaning",
+    "occupant_state=out",
+    "occupant_state=preconditioning",
+    "occupant_state=sleeping",
+    "occupant_state=Unknown",
+    "pir_persona=Explorer",
+    "pir_persona=Napper",
+    "pir_persona=NightOwl",
+    "pir_persona=Standard",
+    "pir_persona=Unknown",
+    "room_state=Cleaning",
+    "room_state=Occupied",
+    "room_state=Vacant",
+    "room_state=Unknown"
+  ],
+  "base_numeric_cols": [
+    "floor_scaled",
+    "size_scaled",
+    "outside_temp_scaled",
+    "room_temp_scaled",
+    "setpoint_scaled",
+    "ideal_temp_scaled",
+    "temp_error_scaled",
+    "comfort_error_scaled",
+    "pir_motion",
+    "has_guest",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos"
+  ],
+  "categorical_cols": [
+    "facade",
+    "room_type",
+    "hvac_mode",
+    "occupant_state",
+    "pir_persona",
+    "room_state"
+  ],
+  "category_values": {
+    "facade": [
+      "East",
+      "North",
+      "South",
+      "West",
+      "Unknown"
+    ],
+    "room_type": [
+      "Deluxe",
+      "Standard",
+      "Suite",
+      "Unknown"
+    ],
+    "hvac_mode": [
+      "cooling",
+      "heating",
+      "off",
+      "Unknown"
+    ],
+    "occupant_state": [
+      "active",
+      "cleaning",
+      "out",
+      "preconditioning",
+      "sleeping",
+      "Unknown"
+    ],
+    "pir_persona": [
+      "Explorer",
+      "Napper",
+      "NightOwl",
+      "Standard",
+      "Unknown"
+    ],
+    "room_state": [
+      "Cleaning",
+      "Occupied",
+      "Vacant",
+      "Unknown"
+    ]
+  },
+  "input_dim": 42,
+  "d_model": 96,
+  "n_heads": 4,
+  "n_layers": 2,
+  "dim_feedforward": 192,
+  "dropout": 0.15,
+  "seed": 42,
+  "max_rows": null,
+  "max_sequences": 500000,
+  "excluded_labels": [
+    "",
+    "None",
+    "Unknown",
+    "nan"
+  ],
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.5924632875061036,
+      "train_accuracy": 0.58242,
+      "val_loss": 0.7182214185142517,
+      "val_accuracy": 0.63726
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.31817472950696946,
+      "train_accuracy": 0.7716875,
+      "val_loss": 0.45654475994110105,
+      "val_accuracy": 0.77098
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.20908570962905884,
+      "train_accuracy": 0.8611975,
+      "val_loss": 0.34245099124908446,
+      "val_accuracy": 0.86876
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.15800868639945984,
+      "train_accuracy": 0.8951,
+      "val_loss": 0.28580224261283876,
+      "val_accuracy": 0.87928
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.13419989377498626,
+      "train_accuracy": 0.9115275,
+      "val_loss": 0.48776536361694334,
+      "val_accuracy": 0.84234
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.11826385837554931,
+      "train_accuracy": 0.921525,
+      "val_loss": 0.36996824841499326,
+      "val_accuracy": 0.8783
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.10742183171272278,
+      "train_accuracy": 0.92819,
+      "val_loss": 0.38654853231430053,
+      "val_accuracy": 0.86508
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.08652369116663933,
+      "train_accuracy": 0.9412975,
+      "val_loss": 0.39391763315200806,
+      "val_accuracy": 0.89094
+    }
+  ],
+  "metrics": {
+    "accuracy": 0.8055
+  }
+}

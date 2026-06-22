@@ -1,0 +1,12 @@
+rows: 10,563,249
+train rows: 8,450,832
+test rows: 2,112,417
+split time: 2022-06-10 23:10:00
+MAE: 0.105
+RMSE: 0.356
+R2: 0.999
+actual level-sum proxy: 80768552
+efficient target level-sum proxy: 58691230
+model level-sum proxy: 58723973
+target saving vs actual: 27.33%
+model saving vs actual: 27.29%
