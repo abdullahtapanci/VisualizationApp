@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 
-import numpy as np
 import pandas as pd
 
 from backend.hvac_energy import _estimate_power
@@ -10,7 +9,6 @@ from backend.hvac_energy import _estimate_power
 
 SETPOINT_MIN = 14.0
 SETPOINT_MAX = 28.0
-SETPOINT_STEP = 0.5
 
 BASE_NUMERIC_COLS = [
     "floor_scaled",
@@ -67,18 +65,18 @@ def candidate_mode(room_temp: float, setpoint: float, current_mode: str) -> str:
     return "off"
 
 
-def comfort_band(occupancy: str, persona: str) -> float:
+def energy_saving_delta(occupancy: str, persona: str) -> float:
     occupancy_norm = str(occupancy or "").strip().lower()
     persona_norm = str(persona or "").strip().lower().replace("_", "")
     if occupancy_norm == "vacant":
-        return 5.0
+        return 2.0
     if persona_norm == "energysaver":
-        return 3.5
-    if persona_norm == "alwaysoncomfort":
-        return 1.0
-    if persona_norm in {"preconditioning", "housekeeping"}:
         return 1.5
-    return 2.5
+    if persona_norm == "alwaysoncomfort":
+        return 0.5
+    if persona_norm in {"preconditioning", "housekeeping"}:
+        return 0.5
+    return 1.0
 
 
 def estimate_candidate_power(row: pd.Series, setpoint: float, current_mode: str) -> tuple[float, str]:
@@ -94,7 +92,6 @@ def choose_energy_saving_setpoint(row: pd.Series) -> dict:
     room_temp = float(row.get("room_temp") or 0.0)
     outside_temp = float(row.get("outside_temp") or 0.0)
     current_setpoint = float(row.get("setpoint") or 0.0)
-    ideal_temp = float(row.get("ideal_temp") or current_setpoint or 22.0)
     occupancy = str(row.get("room_state") or "Unknown")
     persona = str(row.get("ac_persona") or "Unknown")
 
@@ -108,32 +105,19 @@ def choose_energy_saving_setpoint(row: pd.Series) -> dict:
     current_row["hvac_mode"] = current_mode
     current_power = float(_estimate_power(current_row))
 
-    band = comfort_band(occupancy, persona)
-    lower = max(SETPOINT_MIN, ideal_temp - band)
-    upper = min(SETPOINT_MAX, ideal_temp + band)
-    if lower > upper:
-        lower, upper = SETPOINT_MIN, SETPOINT_MAX
-
-    grid = np.arange(SETPOINT_MIN, SETPOINT_MAX + 0.001, SETPOINT_STEP)
-    candidates = [float(value) for value in grid if lower - 1e-9 <= value <= upper + 1e-9]
-    candidates.append(round(min(max(current_setpoint, SETPOINT_MIN), SETPOINT_MAX) * 2) / 2)
-    if not candidates:
-        candidates = [round(min(max(current_setpoint, SETPOINT_MIN), SETPOINT_MAX) * 2) / 2]
-
-    evaluated = []
-    for setpoint in candidates:
-        power, mode = estimate_candidate_power(row, setpoint, current_mode)
-        comfort_gap = abs(room_temp - ideal_temp)
-        setpoint_gap = abs(setpoint - ideal_temp)
-        evaluated.append((power, setpoint_gap, setpoint, mode, comfort_gap))
-
-    target_power, _, target_setpoint, target_mode, target_comfort_gap = min(
-        evaluated,
-        key=lambda item: (item[0], item[1]),
-    )
+    delta = energy_saving_delta(occupancy, persona)
+    if current_mode == "heating":
+        target_setpoint = current_setpoint - delta
+    elif current_mode == "cooling":
+        target_setpoint = current_setpoint + delta
+    else:
+        target_setpoint = current_setpoint
+    target_setpoint = round(min(max(target_setpoint, SETPOINT_MIN), SETPOINT_MAX) * 2) / 2
+    target_power, target_mode = estimate_candidate_power(row, target_setpoint, current_mode)
     if target_power > current_power + 1e-6:
         target_setpoint = round(min(max(current_setpoint, SETPOINT_MIN), SETPOINT_MAX) * 2) / 2
         target_power, target_mode = estimate_candidate_power(row, target_setpoint, current_mode)
+    target_comfort_gap = abs(room_temp - float(row.get("ideal_temp") or current_setpoint or 22.0))
 
     return {
         "recommended_setpoint": round(target_setpoint * 2) / 2,
@@ -142,8 +126,69 @@ def choose_energy_saving_setpoint(row: pd.Series) -> dict:
         "current_power_w": current_power,
         "current_energy_mode": current_mode,
         "target_comfort_gap_c": target_comfort_gap,
-        "comfort_band_c": band,
+        "energy_saving_delta_c": delta,
     }
+
+
+def build_energy_saving_targets(df: pd.DataFrame) -> pd.DataFrame:
+    room_temp = df["room_temp"].astype(float)
+    outside_temp = df["outside_temp"].astype(float)
+    current_setpoint = df["setpoint"].astype(float)
+    hvac_mode = df["hvac_mode"].fillna("Unknown").astype(str).str.lower()
+    occupancy = df["room_state"].fillna("Unknown").astype(str).str.lower()
+    persona = df["ac_persona"].fillna("Unknown").astype(str).str.lower().str.replace("_", "", regex=False)
+
+    current_mode = hvac_mode.where(hvac_mode.isin(["heating", "cooling"]), "off")
+    current_mode = current_mode.mask(
+        ~hvac_mode.isin(["heating", "cooling"]) & ((room_temp > current_setpoint + 0.4) | (outside_temp >= 27)),
+        "cooling",
+    )
+    current_mode = current_mode.mask(
+        ~hvac_mode.isin(["heating", "cooling"]) & ((room_temp < current_setpoint - 0.4) | (outside_temp <= 12)),
+        "heating",
+    )
+
+    delta = pd.Series(1.0, index=df.index)
+    delta = delta.mask(occupancy.eq("vacant"), 2.0)
+    delta = delta.mask(persona.eq("energysaver"), 1.5)
+    delta = delta.mask(persona.eq("alwaysoncomfort"), 0.5)
+    delta = delta.mask(persona.isin(["preconditioning", "housekeeping"]), 0.5)
+
+    target = current_setpoint.copy()
+    target = target.mask(current_mode.eq("heating"), current_setpoint - delta)
+    target = target.mask(current_mode.eq("cooling"), current_setpoint + delta)
+    target = (target.clip(SETPOINT_MIN, SETPOINT_MAX) * 2).round() / 2
+
+    target_mode = current_mode.copy()
+    target_mode = target_mode.mask(current_mode.eq("heating") & ~(room_temp < target - 0.4), "off")
+    target_mode = target_mode.mask(current_mode.eq("cooling") & ~(room_temp > target + 0.4), "off")
+
+    current_df = df.copy()
+    current_df["hvac_mode"] = current_mode
+    target_df = df.copy()
+    target_df["setpoint"] = target
+    target_df["hvac_mode"] = target_mode
+    current_power = current_df.apply(_estimate_power, axis=1)
+    target_power = target_df.apply(_estimate_power, axis=1)
+
+    increase_mask = target_power > current_power
+    target = target.mask(increase_mask, current_setpoint.clip(SETPOINT_MIN, SETPOINT_MAX))
+    target = (target * 2).round() / 2
+    target_mode = target_mode.mask(increase_mask, current_mode)
+    target_power = target_power.mask(increase_mask, current_power)
+
+    ideal_temp = df["ideal_temp"].astype(float).where(df["ideal_temp"].notna(), current_setpoint)
+    return pd.DataFrame(
+        {
+            "recommended_setpoint": target,
+            "target_power_w": target_power.astype(float),
+            "target_mode": target_mode,
+            "current_power_w": current_power.astype(float),
+            "current_energy_mode": current_mode,
+            "target_comfort_gap_c": (room_temp - ideal_temp).abs(),
+            "energy_saving_delta_c": delta,
+        }
+    )
 
 
 def build_feature_row(row: pd.Series, timestamp: pd.Timestamp) -> dict:
@@ -197,6 +242,6 @@ def prepare_temperature_frame(data_csv, max_rows: int | None = None) -> pd.DataF
     for col in ["floor", "size_m2", "outside_temp", "room_temp", "setpoint", "ideal_temp", "pir_motion"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
     df["guest_id"] = pd.to_numeric(df["guest_id"], errors="coerce")
-    target = df.apply(choose_energy_saving_setpoint, axis=1, result_type="expand")
+    target = build_energy_saving_targets(df)
     df = pd.concat([df, target], axis=1)
     return df
