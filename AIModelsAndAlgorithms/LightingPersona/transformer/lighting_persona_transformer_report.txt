@@ -1,0 +1,20 @@
+samples: 3,468
+train samples: 2,774
+test samples: 694
+sequence length: 24
+stride: 12
+input features: 19
+time range: 2022-01-06 22:00:00 to 2022-02-05 23:55:00
+best test accuracy: 0.500
+
+              precision    recall  f1-score   support
+
+    Balanced      0.570     0.343     0.429       166
+NightFocused      0.019     0.022     0.020        90
+     Routine      0.813     0.884     0.847       207
+StaticBright      0.272     0.319     0.293        69
+   StaticDim      0.461     0.512     0.485       162
+
+    accuracy                          0.500       694
+   macro avg      0.427     0.416     0.415       694
+weighted avg      0.516     0.500     0.500       694

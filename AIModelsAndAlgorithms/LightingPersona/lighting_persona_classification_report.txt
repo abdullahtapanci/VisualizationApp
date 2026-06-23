@@ -1,11 +1,17 @@
+rows: 3,668
+train rows: 2,934
+test rows: 734
+window hours: 4
+stride minutes: 60
+
               precision    recall  f1-score   support
 
-    Balanced      0.500     0.500     0.500         2
-NightFocused      0.000     0.000     0.000         1
-     Routine      0.500     0.333     0.400         3
-StaticBright      0.667     0.667     0.667         3
-   StaticDim      0.333     1.000     0.500         1
+    Balanced     0.9661    0.9828    0.9744       116
+NightFocused     1.0000    0.9903    0.9951       103
+     Routine     0.9888    0.9815    0.9852       271
+StaticBright     0.9935    0.9935    0.9935       154
+   StaticDim     0.9890    1.0000    0.9945        90
 
-    accuracy                          0.500        10
-   macro avg      0.400     0.500     0.413        10
-weighted avg      0.483     0.500     0.470        10
+    accuracy                         0.9877       734
+   macro avg     0.9875    0.9896    0.9885       734
+weighted avg     0.9878    0.9877    0.9878       734

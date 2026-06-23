@@ -2,7 +2,7 @@ Lighting Persona Transformer
 ============================
 
 Parsed metrics:
-- accuracy: 0.278
+- accuracy: 0.5
 
 report: AIModelsAndAlgorithms/LightingPersona/transformer/lighting_persona_transformer_report.txt
 confusion: AIModelsAndAlgorithms/LightingPersona/transformer/lighting_persona_transformer_confusion_matrix.csv

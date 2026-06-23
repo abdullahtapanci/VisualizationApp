@@ -2,7 +2,7 @@ Temperature Persona Transformer
 ===============================
 
 Parsed metrics:
-- accuracy: 0.7963
+- accuracy: 0.8103
 
 report: AIModelsAndAlgorithms/TempreturePersona/transformer/tempreture_persona_transformer_report.txt
 confusion: AIModelsAndAlgorithms/TempreturePersona/transformer/tempreture_persona_transformer_confusion_matrix.csv

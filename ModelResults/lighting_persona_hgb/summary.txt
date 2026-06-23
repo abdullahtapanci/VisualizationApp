@@ -1,5 +1,6 @@
-Lighting Persona Random Forest
-==============================
+Lighting Persona HistGradientBoostingClassifier
+===============================================
 
 report: AIModelsAndAlgorithms/LightingPersona/lighting_persona_classification_report.txt
 confusion: AIModelsAndAlgorithms/LightingPersona/lighting_persona_confusion_matrix.csv
+metadata: AIModelsAndAlgorithms/LightingPersona/lighting_persona_metadata.json

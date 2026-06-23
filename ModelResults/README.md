@@ -15,8 +15,8 @@ Folder: `ModelResults/occupancy_transformer`
 - `04_per_class_precision_recall_f1.png`
 - `05_class_support.png`
 
-## Lighting Persona Random Forest
-Folder: `ModelResults/lighting_persona_random_forest`
+## Lighting Persona HistGradientBoostingClassifier
+Folder: `ModelResults/lighting_persona_hgb`
 - `02_confusion_matrix_counts.png`
 - `03_confusion_matrix_percent.png`
 - `04_per_class_precision_recall_f1.png`

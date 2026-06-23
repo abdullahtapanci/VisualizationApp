@@ -37,11 +37,12 @@ MODEL_SPECS = [
         "metadata": MODELS_ROOT / "OccupancyPrediction" / "trandformer" / "occupancy_transformer_metadata.json",
     },
     {
-        "name": "lighting_persona_random_forest",
-        "title": "Lighting Persona Random Forest",
+        "name": "lighting_persona_hgb",
+        "title": "Lighting Persona HistGradientBoostingClassifier",
         "kind": "classifier",
         "report": MODELS_ROOT / "LightingPersona" / "lighting_persona_classification_report.txt",
         "confusion": MODELS_ROOT / "LightingPersona" / "lighting_persona_confusion_matrix.csv",
+        "metadata": MODELS_ROOT / "LightingPersona" / "lighting_persona_metadata.json",
     },
     {
         "name": "lighting_persona_transformer",

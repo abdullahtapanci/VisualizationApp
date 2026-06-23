@@ -39,7 +39,7 @@ notebook and run the optional copy cell.
 | Notebook | Model | Saves To |
 |---|---|---|
 | `01_occupancy_random_forest_colab.ipynb` | Occupancy RandomForest | `AIModelsAndAlgorithms/OccupancyPrediction` |
-| `02_lighting_persona_random_forest_colab.ipynb` | Lighting persona sliding-window HistGradientBoostingClassifier | `AIModelsAndAlgorithms/LightingPersona` |
+| `02_lighting_persona_hgb_colab.ipynb` | Lighting persona sliding-window HistGradientBoostingClassifier | `AIModelsAndAlgorithms/LightingPersona` |
 | `03_lighting_recommendation_hgb_colab.ipynb` | Lighting recommendation HistGradientBoostingRegressor | `AIModelsAndAlgorithms/LightingRecommendation` |
 | `04_temperature_recommendation_hgb_energy_aware_colab.ipynb` | Temperature recommendation energy-aware HistGradientBoostingRegressor | `AIModelsAndAlgorithms/TempretureRecomendation` |
 | `05_lighting_persona_transformer_colab_runner.ipynb` | Lighting persona Transformer | `AIModelsAndAlgorithms/LightingPersona/transformer` |
@@ -63,7 +63,7 @@ GPU, but Colab can still help because the new datasets are large.
 
 ## Accuracy Fixes Added
 
-- `02_lighting_persona_random_forest_colab.ipynb` now trains the app-facing
+- `02_lighting_persona_hgb_colab.ipynb` now trains the app-facing
   `lighting_persona_model.joblib` from sliding 4-hour windows instead of one
   room-day sample. This should create many more usable samples from the same
   two-year lighting dataset.
