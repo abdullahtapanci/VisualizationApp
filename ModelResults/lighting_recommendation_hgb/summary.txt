@@ -1,0 +1,12 @@
+Lighting Recommendation HistGradientBoostingRegressor
+=====================================================
+
+Parsed metrics:
+- mae: 1.055
+- rmse: 3.284
+- r2: 0.962
+- target_saving_pct: 35.98
+- model_saving_pct: 39.57
+
+report: AIModelsAndAlgorithms/LightingRecommendation/lighting_recommendation_report.txt
+predictions: AIModelsAndAlgorithms/LightingRecommendation/lighting_recommendation_sample_predictions.csv

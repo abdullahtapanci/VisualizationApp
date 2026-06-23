@@ -1,8 +1,16 @@
-rows: 5,212,900
-train rows: 4,170,400
-test rows: 1,042,500
-split time: 2022-05-30 19:15:00
+rows: 100,000
+train rows: 80,000
+test rows: 20,000
+split time: 2022-01-08 18:36:00
 algorithm: HistGradientBoostingRegressor
-MAE: 0.010
-RMSE: 0.074
-R2: 0.999
+target strategy: energy-aware comfort-constrained setpoint
+MAE: 0.039
+RMSE: 0.346
+R2: 0.989
+current energy proxy W-sum: 10025898
+target energy proxy W-sum: 9471549
+model energy proxy W-sum: 9434656
+target saving vs current: 5.53%
+model saving vs current: 5.90%
+target mean comfort gap C: 5.278
+model mean comfort gap C: 5.289

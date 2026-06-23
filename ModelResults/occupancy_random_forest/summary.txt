@@ -1,0 +1,5 @@
+Occupancy Random Forest
+=======================
+
+report: AIModelsAndAlgorithms/OccupancyPrediction/occupancy_classification_report.txt
+confusion: AIModelsAndAlgorithms/OccupancyPrediction/occupancy_confusion_matrix.csv

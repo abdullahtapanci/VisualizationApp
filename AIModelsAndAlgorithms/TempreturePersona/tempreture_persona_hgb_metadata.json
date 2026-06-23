@@ -1,0 +1,66 @@
+{
+  "model_type": "hist_gradient_boosting_classifier",
+  "task": "tempreture_persona",
+  "target": "temperature_persona",
+  "classes": [
+    "AlwaysOnComfort",
+    "EnergySaver",
+    "Housekeeping",
+    "Preconditioning",
+    "Reactive"
+  ],
+  "feature_columns": [
+    "floor_scaled",
+    "size_scaled",
+    "outside_temp_scaled",
+    "room_temp_scaled",
+    "setpoint_scaled",
+    "ideal_temp_scaled",
+    "temp_error_scaled",
+    "comfort_error_scaled",
+    "pir_motion",
+    "has_guest",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "facade",
+    "room_type",
+    "hvac_mode",
+    "occupant_state",
+    "pir_persona",
+    "room_state"
+  ],
+  "numeric_features": [
+    "floor_scaled",
+    "size_scaled",
+    "outside_temp_scaled",
+    "room_temp_scaled",
+    "setpoint_scaled",
+    "ideal_temp_scaled",
+    "temp_error_scaled",
+    "comfort_error_scaled",
+    "pir_motion",
+    "has_guest",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos"
+  ],
+  "categorical_features": [
+    "facade",
+    "room_type",
+    "hvac_mode",
+    "occupant_state",
+    "pir_persona",
+    "room_state"
+  ],
+  "seed": 42,
+  "max_rows": 500000,
+  "min_class_rows": 25,
+  "output_dir": "/content/drive/MyDrive/VisualizationApp/AIModelsAndAlgorithms/TempreturePersona",
+  "metrics": {
+    "accuracy": 0.9000297973778307,
+    "balanced_accuracy": 0.888956838905775
+  }
+}

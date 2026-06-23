@@ -1,10 +1,17 @@
-rows: 5,212,900
-sequences: 500,000
-train sequences: 400,000
-validation sequences: 50,000
-test sequences: 50,000
-sequence length: 24
-prediction horizon minutes: 5
-MAE: 0.217
-RMSE: 0.310
-R2: 0.962
+rows: 2,000,000
+sequences: 300,000
+train sequences: 240,000
+val sequences: 30,000
+test sequences: 30,000
+algorithm: TransformerEncoder
+target strategy: energy-aware comfort-constrained setpoint
+MAE: 0.126
+RMSE: 0.576
+R2: 0.974
+current energy proxy W-sum: 18369473
+target energy proxy W-sum: 16678098
+model energy proxy W-sum: 16759322
+target saving vs current: 9.21%
+model saving vs current: 8.77%
+target mean comfort gap C: 4.221
+model mean comfort gap C: 4.185

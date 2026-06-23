@@ -1,0 +1,15 @@
+Temperature Recommendation HistGradientBoostingRegressor
+========================================================
+
+Parsed metrics:
+- mae: 0.039
+- rmse: 0.346
+- r2: 0.989
+- target_saving_pct: 5.53
+- model_saving_pct: 5.9
+- target_mean_comfort_gap_c: 5.278
+- model_mean_comfort_gap_c: 5.289
+
+report: AIModelsAndAlgorithms/TempretureRecomendation/tempreture_recomendation_hgb_report.txt
+predictions: AIModelsAndAlgorithms/TempretureRecomendation/tempreture_recomendation_hgb_sample_predictions.csv
+metadata: AIModelsAndAlgorithms/TempretureRecomendation/tempreture_recomendation_hgb_metadata.json

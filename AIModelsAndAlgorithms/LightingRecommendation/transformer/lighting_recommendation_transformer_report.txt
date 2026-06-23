@@ -1,15 +1,15 @@
-rows: 10,563,249
-sequences: 500,000
-train sequences: 400,000
-validation sequences: 50,000
-test sequences: 50,000
+rows: 2,000,000
+sequences: 166,154
+train sequences: 132,923
+validation sequences: 16,615
+test sequences: 16,616
 sequence length: 12
 prediction horizon minutes: 5
-MAE: 1.027
-RMSE: 1.880
-R2: 0.985
-actual level-sum proxy: 2359521
-efficient target level-sum proxy: 1676209
-model level-sum proxy: 1671016
-target saving vs actual: 28.96%
-model saving vs actual: 29.18%
+MAE: 0.649
+RMSE: 1.570
+R2: 0.993
+actual level-sum proxy: 380067
+efficient target level-sum proxy: 257242
+model level-sum proxy: 255689
+target saving vs actual: 32.32%
+model saving vs actual: 32.73%

@@ -3,6 +3,7 @@
   "task": "tempreture_recomendation",
   "prediction_horizon_minutes": 5,
   "target": "recommended_setpoint",
+  "target_strategy": "energy_aware_comfort_constrained",
   "setpoint_min": 16.0,
   "setpoint_max": 28.0,
   "numeric_features": [
@@ -30,43 +31,16 @@
     "occupancy_prediction",
     "temperature_persona_prediction"
   ],
-  "persona_policy": {
-    "AlwaysOnComfort": {
-      "cooling": 22.5,
-      "heating": 22.0,
-      "idle": 22.5
-    },
-    "EnergySaver": {
-      "cooling": 26.0,
-      "heating": 19.0,
-      "idle": 24.0
-    },
-    "Reactive": {
-      "cooling": 23.5,
-      "heating": 21.5,
-      "idle": 23.0
-    },
-    "Preconditioning": {
-      "cooling": 23.0,
-      "heating": 21.0,
-      "idle": 23.0
-    },
-    "Housekeeping": {
-      "cooling": 24.0,
-      "heating": 20.0,
-      "idle": 23.0
-    },
-    "Unknown": {
-      "cooling": 24.0,
-      "heating": 20.0,
-      "idle": 23.0
-    }
-  },
   "seed": 42,
-  "max_rows": null,
+  "max_rows": 100000,
+  "output_dir": "/content/drive/MyDrive/VisualizationApp/AIModelsAndAlgorithms/TempretureRecomendation",
   "metrics": {
-    "mae": 0.010241726618705036,
-    "rmse": 0.0735107946525926,
-    "r2": 0.9987033534500896
+    "mae": 0.039125,
+    "rmse": 0.3462116404744358,
+    "r2": 0.9889363315895878,
+    "target_saving_pct": 5.529168913784055,
+    "model_saving_pct": 5.897144094382756,
+    "target_mean_comfort_gap_c": 5.278125,
+    "model_mean_comfort_gap_c": 5.2889
   }
 }

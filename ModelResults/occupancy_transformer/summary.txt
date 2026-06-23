@@ -1,0 +1,9 @@
+Occupancy Transformer
+=====================
+
+Parsed metrics:
+- accuracy: 0.987
+
+report: AIModelsAndAlgorithms/OccupancyPrediction/trandformer/occupancy_transformer_report.txt
+confusion: AIModelsAndAlgorithms/OccupancyPrediction/trandformer/occupancy_transformer_confusion_matrix.csv
+metadata: AIModelsAndAlgorithms/OccupancyPrediction/trandformer/occupancy_transformer_metadata.json

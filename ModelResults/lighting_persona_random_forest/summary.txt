@@ -1,0 +1,5 @@
+Lighting Persona Random Forest
+==============================
+
+report: AIModelsAndAlgorithms/LightingPersona/lighting_persona_classification_report.txt
+confusion: AIModelsAndAlgorithms/LightingPersona/lighting_persona_confusion_matrix.csv

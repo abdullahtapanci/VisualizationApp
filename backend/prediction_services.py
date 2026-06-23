@@ -57,6 +57,18 @@ TEMPRETURE_PERSONA_TRANSFORMER_METADATA_FILE = (
     / "transformer"
     / "tempreture_persona_transformer_metadata.json"
 )
+TEMPRETURE_PERSONA_HGB_FILE = (
+    BASE_DIR
+    / "AIModelsAndAlgorithms"
+    / "TempreturePersona"
+    / "tempreture_persona_hgb_model.joblib"
+)
+TEMPRETURE_PERSONA_HGB_METADATA_FILE = (
+    BASE_DIR
+    / "AIModelsAndAlgorithms"
+    / "TempreturePersona"
+    / "tempreture_persona_hgb_metadata.json"
+)
 TEMPRETURE_RECOMENDATION_TRANSFORMER_FILE = (
     BASE_DIR
     / "AIModelsAndAlgorithms"
@@ -77,6 +89,12 @@ TEMPRETURE_RECOMENDATION_HGB_FILE = (
     / "TempretureRecomendation"
     / "tempreture_recomendation_hgb_model.joblib"
 )
+TEMPRETURE_RECOMENDATION_HGB_METADATA_FILE = (
+    BASE_DIR
+    / "AIModelsAndAlgorithms"
+    / "TempretureRecomendation"
+    / "tempreture_recomendation_hgb_metadata.json"
+)
 _LIGHTING_PERSONA_MODEL_CACHE: dict | None = None
 _LIGHTING_PERSONA_MODEL_MTIME: float | None = None
 _LIGHTING_PERSONA_TRANSFORMER_CACHE: dict | None = None
@@ -85,6 +103,8 @@ _OCCUPANCY_MODEL_CACHE: dict | None = None
 _OCCUPANCY_MODEL_MTIME: float | None = None
 _OCCUPANCY_TRANSFORMER_CACHE: dict | None = None
 _OCCUPANCY_TRANSFORMER_MTIME: float | None = None
+_TEMPRETURE_PERSONA_HGB_CACHE: dict | None = None
+_TEMPRETURE_PERSONA_HGB_MTIME: float | None = None
 _TEMPRETURE_PERSONA_TRANSFORMER_CACHE: dict | None = None
 _TEMPRETURE_PERSONA_TRANSFORMER_MTIME: float | None = None
 _TEMPRETURE_RECOMENDATION_TRANSFORMER_CACHE: dict | None = None
@@ -351,6 +371,35 @@ def _resolve_occupancy_model_type(payload: dict) -> str:
     return "random_forest"
 
 
+def _load_tempreture_persona_hgb() -> dict | None:
+    global _TEMPRETURE_PERSONA_HGB_CACHE, _TEMPRETURE_PERSONA_HGB_MTIME
+
+    if not TEMPRETURE_PERSONA_HGB_FILE.exists():
+        return None
+
+    model_mtime = TEMPRETURE_PERSONA_HGB_FILE.stat().st_mtime
+    if TEMPRETURE_PERSONA_HGB_METADATA_FILE.exists():
+        model_mtime = max(model_mtime, TEMPRETURE_PERSONA_HGB_METADATA_FILE.stat().st_mtime)
+    if _TEMPRETURE_PERSONA_HGB_CACHE is not None and _TEMPRETURE_PERSONA_HGB_MTIME == model_mtime:
+        return _TEMPRETURE_PERSONA_HGB_CACHE
+
+    model_bundle = joblib.load(TEMPRETURE_PERSONA_HGB_FILE)
+    if isinstance(model_bundle, dict) and TEMPRETURE_PERSONA_HGB_METADATA_FILE.exists():
+        metadata = json.loads(TEMPRETURE_PERSONA_HGB_METADATA_FILE.read_text())
+        model_bundle.setdefault("metadata", metadata)
+        model_bundle.setdefault("classes", list(metadata.get("classes") or []))
+        model_bundle.setdefault(
+            "feature_columns",
+            list(metadata.get("feature_columns") or [])
+            or list(metadata.get("numeric_features") or [])
+            + list(metadata.get("categorical_features") or []),
+        )
+
+    _TEMPRETURE_PERSONA_HGB_CACHE = model_bundle
+    _TEMPRETURE_PERSONA_HGB_MTIME = model_mtime
+    return _TEMPRETURE_PERSONA_HGB_CACHE
+
+
 def _load_tempreture_persona_transformer() -> dict | None:
     global _TEMPRETURE_PERSONA_TRANSFORMER_CACHE, _TEMPRETURE_PERSONA_TRANSFORMER_MTIME
 
@@ -581,11 +630,23 @@ def _load_tempreture_recomendation_hgb() -> dict | None:
         return None
 
     model_mtime = TEMPRETURE_RECOMENDATION_HGB_FILE.stat().st_mtime
+    if TEMPRETURE_RECOMENDATION_HGB_METADATA_FILE.exists():
+        model_mtime = max(model_mtime, TEMPRETURE_RECOMENDATION_HGB_METADATA_FILE.stat().st_mtime)
     if (
         _TEMPRETURE_RECOMENDATION_HGB_CACHE is None
         or _TEMPRETURE_RECOMENDATION_HGB_MTIME != model_mtime
     ):
-        _TEMPRETURE_RECOMENDATION_HGB_CACHE = joblib.load(TEMPRETURE_RECOMENDATION_HGB_FILE)
+        model_bundle = joblib.load(TEMPRETURE_RECOMENDATION_HGB_FILE)
+        if isinstance(model_bundle, dict) and TEMPRETURE_RECOMENDATION_HGB_METADATA_FILE.exists():
+            metadata = json.loads(TEMPRETURE_RECOMENDATION_HGB_METADATA_FILE.read_text())
+            model_bundle.setdefault("metadata", metadata)
+            model_bundle.setdefault(
+                "feature_columns",
+                list(metadata.get("feature_columns") or [])
+                or list(metadata.get("numeric_features") or [])
+                + list(metadata.get("categorical_features") or []),
+            )
+        _TEMPRETURE_RECOMENDATION_HGB_CACHE = model_bundle
         _TEMPRETURE_RECOMENDATION_HGB_MTIME = model_mtime
     return _TEMPRETURE_RECOMENDATION_HGB_CACHE
 
@@ -809,6 +870,9 @@ def _build_lighting_persona_feature_row(df: pd.DataFrame, room_number: int) -> d
         "occupants_max": float(df["n_occupants"].max()) if not df.empty else 0.0,
         "active_actors_mean": float(df["active_actors"].mean()) if not df.empty else 0.0,
     }
+    latest_timestamp = df["timestamp"].max() if not df.empty else pd.Timestamp.now()
+    feature_row["window_end_hour_sin"], feature_row["window_end_hour_cos"] = _cyclic_value(int(latest_timestamp.hour), 24)
+    feature_row["window_end_dow_sin"], feature_row["window_end_dow_cos"] = _cyclic_value(int(latest_timestamp.dayofweek), 7)
     for hour in range(24):
         feature_row[f"hour_{hour:02d}_value_mean"] = float(hourly_means.get(hour, 0.0))
     for lamp, share in lamp_counts.items():
@@ -830,13 +894,43 @@ def _build_lighting_persona_transformer_sequence(
     for col in ["pir_motion", "n_occupants", "active_actors", "hurry_morning", "lazy_day", "forgetful"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
+    matrix = np.zeros((seq_len, len(feature_names)), dtype=np.float32)
+    feature_index = {name: idx for idx, name in enumerate(feature_names)}
+
+    if seq_len < 288:
+        end_time = timestamp.floor("5min")
+        expected_times = pd.date_range(end=end_time, periods=seq_len, freq="5min")
+        time_index = {time: idx for idx, time in enumerate(expected_times)}
+        df["slot_time"] = df["timestamp"].dt.floor("5min")
+        df = df[df["slot_time"].isin(time_index)]
+
+        lamp_df = df[df["lamp_location"].ne("none")]
+        if not lamp_df.empty:
+            lamp_profile = lamp_df.groupby(["slot_time", "lamp_location"])["value"].mean()
+            for (slot_time, lamp), value in lamp_profile.items():
+                if lamp in feature_index:
+                    matrix[time_index[slot_time], feature_index[lamp]] = float(value)
+
+        context_cols = ["pir_motion", "n_occupants", "active_actors", "hurry_morning", "lazy_day", "forgetful"]
+        if not df.empty:
+            context_profile = df.groupby("slot_time")[context_cols].mean()
+            for slot_time, row in context_profile.iterrows():
+                for col in context_cols:
+                    if col in feature_index:
+                        matrix[time_index[slot_time], feature_index[col]] = float(row[col])
+
+        hours = np.array([time.hour for time in expected_times])
+        if "hour_sin" in feature_index:
+            matrix[:, feature_index["hour_sin"]] = np.sin(2 * np.pi * hours / 24)
+        if "hour_cos" in feature_index:
+            matrix[:, feature_index["hour_cos"]] = np.cos(2 * np.pi * hours / 24)
+        return matrix
+
     # Use the selected calendar day up to the selected timestamp. Future slots
     # stay zero so prediction does not read future behavior.
     day_start = timestamp.normalize()
     df = df[(df["timestamp"] >= day_start) & (df["timestamp"] <= timestamp)]
 
-    matrix = np.zeros((seq_len, len(feature_names)), dtype=np.float32)
-    feature_index = {name: idx for idx, name in enumerate(feature_names)}
     lamp_df = df[df["lamp_location"].ne("none")]
     if not lamp_df.empty:
         lamp_profile = lamp_df.groupby(["slot", "lamp_location"])["value"].mean()
@@ -961,6 +1055,84 @@ def _build_tempreture_persona_transformer_sequence(
     return np.array(encoded_steps, dtype=np.float32), diagnostics
 
 
+def _tempreture_persona_dataset_fallback(
+    df: pd.DataFrame,
+    timestamp: pd.Timestamp,
+    lookback_hours: int,
+    message: str,
+) -> dict:
+    if df.empty:
+        prediction = "Unknown"
+        diagnostics = {
+            "room_temp": 0.0,
+            "setpoint": 0.0,
+            "ideal_temp": 0.0,
+            "outside_temp": 0.0,
+            "temp_error": 0.0,
+            "comfort_error": 0.0,
+            "hvac_mode": "Unknown",
+            "room_state": "Unknown",
+            "occupant_state": "Unknown",
+            "motion_rate": 0.0,
+            "has_guest": 0,
+            "samples": 0,
+        }
+    else:
+        prepared = df.copy()
+        prepared["timestamp"] = pd.to_datetime(prepared["timestamp"], errors="coerce")
+        prepared = prepared.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
+        if prepared.empty:
+            prepared = df.copy().reset_index(drop=True)
+        for col in ["outside_temp", "room_temp", "setpoint", "ideal_temp", "pir_motion"]:
+            prepared[col] = pd.to_numeric(prepared[col], errors="coerce").fillna(0)
+        prepared["guest_id"] = pd.to_numeric(prepared["guest_id"], errors="coerce")
+        latest = prepared.iloc[-1]
+        room_temp = float(latest.get("room_temp") or 0.0)
+        setpoint = float(latest.get("setpoint") or 0.0)
+        ideal_temp = float(latest.get("ideal_temp") or 0.0)
+        raw_persona = latest.get("ac_persona")
+        prediction = "Unknown" if pd.isna(raw_persona) or str(raw_persona).strip().lower() in {"", "none", "nan"} else str(raw_persona)
+        diagnostics = {
+            "room_temp": room_temp,
+            "setpoint": setpoint,
+            "ideal_temp": ideal_temp,
+            "outside_temp": float(latest.get("outside_temp") or 0.0),
+            "temp_error": room_temp - setpoint,
+            "comfort_error": room_temp - ideal_temp,
+            "hvac_mode": str(latest.get("hvac_mode") or "Unknown"),
+            "room_state": str(latest.get("room_state") or "Unknown"),
+            "occupant_state": str(latest.get("occupant_state") or "Unknown"),
+            "motion_rate": float(prepared["pir_motion"].mean()) if not prepared.empty else 0.0,
+            "has_guest": int(pd.notna(latest.get("guest_id"))),
+            "samples": int(len(prepared)),
+        }
+
+    return {
+        "prediction": prediction,
+        "confidence": 1.0,
+        "probabilities": {prediction: 1.0},
+        "features": {
+            **diagnostics,
+            "lookback_hours": lookback_hours,
+            "sequence_length": 0,
+            "model": "DatasetFallback",
+            "model_type": "dataset_fallback",
+            "fallback_timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "message": message,
+    }
+
+
+def _build_tempreture_persona_hgb_frame(
+    latest_row: pd.Series,
+    timestamp: pd.Timestamp,
+    model_bundle: dict,
+) -> pd.DataFrame:
+    step = _build_tempreture_persona_step(latest_row, timestamp)
+    feature_columns = list(model_bundle.get("feature_columns") or [])
+    return pd.DataFrame([{col: step.get(col, 0.0) for col in feature_columns}])
+
+
 def _build_tempreture_recomendation_step(
     row: pd.Series,
     timestamp: pd.Timestamp,
@@ -1062,6 +1234,11 @@ def _infer_hvac_recomendation_mode(room_temp: float, setpoint: float, outside_te
     if room_temp < setpoint - 0.4 or outside_temp <= 12:
         return "heating"
     return "idle"
+
+
+def _energy_estimation_mode(room_temp: float, setpoint: float, outside_temp: float, hvac_mode: str) -> str:
+    mode = _infer_hvac_recomendation_mode(room_temp, setpoint, outside_temp, hvac_mode)
+    return "off" if mode == "idle" else mode
 
 
 def predict_occupancy(payload: dict) -> dict:
@@ -1394,10 +1571,6 @@ def predict_tempreture_persona(payload: dict) -> dict:
     lookback_hours = int(payload.get("lookback_hours") or 2)
     lookback_start = timestamp - timedelta(hours=lookback_hours)
 
-    transformer_bundle = _load_tempreture_persona_transformer()
-    if transformer_bundle is None:
-        raise RuntimeError("Transformer temperature persona model files were not found.")
-
     conn = get_db_connection()
     try:
         df = pd.read_sql_query(
@@ -1421,6 +1594,68 @@ def predict_tempreture_persona(payload: dict) -> dict:
         )
     finally:
         conn.close()
+
+    transformer_bundle = _load_tempreture_persona_transformer()
+    if transformer_bundle is None:
+        hgb_bundle = _load_tempreture_persona_hgb()
+        if hgb_bundle is not None and not df.empty:
+            df_for_latest = df.copy()
+            df_for_latest["timestamp"] = pd.to_datetime(df_for_latest["timestamp"], errors="coerce")
+            df_for_latest = df_for_latest.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
+            for col in ["floor", "size_m2", "outside_temp", "room_temp", "setpoint", "ideal_temp", "pir_motion"]:
+                df_for_latest[col] = pd.to_numeric(df_for_latest[col], errors="coerce").fillna(0)
+            df_for_latest["guest_id"] = pd.to_numeric(df_for_latest["guest_id"], errors="coerce")
+            latest_row = df_for_latest.iloc[-1]
+            row_timestamp = (
+                pd.Timestamp(latest_row.get("timestamp"))
+                if pd.notna(latest_row.get("timestamp"))
+                else timestamp
+            )
+            features_df = _build_tempreture_persona_hgb_frame(latest_row, row_timestamp, hgb_bundle)
+            model = hgb_bundle["model"] if isinstance(hgb_bundle, dict) and "model" in hgb_bundle else hgb_bundle
+            classes = [str(c) for c in hgb_bundle.get("classes", [])] if isinstance(hgb_bundle, dict) else []
+            if not classes and hasattr(model, "classes_"):
+                classes = [str(c) for c in model.classes_]
+            if hasattr(model, "predict_proba") and classes:
+                proba = model.predict_proba(features_df)[0]
+                probabilities = {label: float(value) for label, value in zip(classes, proba)}
+            else:
+                prediction_value = str(model.predict(features_df)[0])
+                classes = classes or [prediction_value]
+                probabilities = {label: 1.0 if label == prediction_value else 0.0 for label in classes}
+            probabilities = _normalise_scores(probabilities, classes)
+            prediction, confidence = _top_class(probabilities)
+            room_temp = float(latest_row.get("room_temp") or 0.0)
+            setpoint = float(latest_row.get("setpoint") or 0.0)
+            ideal_temp = float(latest_row.get("ideal_temp") or 0.0)
+            return {
+                "prediction": prediction,
+                "confidence": confidence,
+                "probabilities": probabilities,
+                "features": {
+                    "room_temp": room_temp,
+                    "setpoint": setpoint,
+                    "ideal_temp": ideal_temp,
+                    "outside_temp": float(latest_row.get("outside_temp") or 0.0),
+                    "temp_error": room_temp - setpoint,
+                    "comfort_error": room_temp - ideal_temp,
+                    "hvac_mode": str(latest_row.get("hvac_mode") or "Unknown"),
+                    "room_state": str(latest_row.get("room_state") or "Unknown"),
+                    "occupant_state": str(latest_row.get("occupant_state") or "Unknown"),
+                    "motion_rate": float(df_for_latest["pir_motion"].mean()) if not df_for_latest.empty else 0.0,
+                    "has_guest": int(pd.notna(latest_row.get("guest_id"))),
+                    "samples": int(len(df_for_latest)),
+                    "lookback_hours": lookback_hours,
+                    "model": "HistGradientBoostingClassifier",
+                    "model_type": "hist_gradient_boosting",
+                },
+            }
+        return _tempreture_persona_dataset_fallback(
+            df,
+            timestamp,
+            lookback_hours,
+            "Temperature persona Transformer files were not found; using latest dataset persona.",
+        )
 
     if df.empty:
         classes = transformer_bundle["classes"]
@@ -1600,9 +1835,24 @@ def predict_tempreture_recomendation(payload: dict) -> dict:
         action = "lower"
 
     latest_row = df.iloc[-1].copy()
-    current_power_w = float(estimate_hvac_power(latest_row))
+    current_energy_mode = _energy_estimation_mode(
+        room_temp,
+        current_setpoint,
+        outside_temp,
+        diagnostics["hvac_mode"],
+    )
+    current_row = latest_row.copy()
+    current_row["hvac_mode"] = current_energy_mode
+    current_power_w = float(estimate_hvac_power(current_row))
     recommended_row = latest_row.copy()
     recommended_row["setpoint"] = recommended_setpoint
+    recommended_energy_mode = _energy_estimation_mode(
+        room_temp,
+        recommended_setpoint,
+        outside_temp,
+        target_mode,
+    )
+    recommended_row["hvac_mode"] = recommended_energy_mode
     recommended_power_w = float(estimate_hvac_power(recommended_row))
     current_energy_wh = current_power_w * HVAC_HOURS_PER_SAMPLE
     recommended_energy_wh = recommended_power_w * HVAC_HOURS_PER_SAMPLE
@@ -1634,6 +1884,8 @@ def predict_tempreture_recomendation(payload: dict) -> dict:
             "recommended_wh": recommended_energy_wh,
             "saved_wh": saved_energy_wh,
             "saved_pct": saved_pct,
+            "current_mode": current_energy_mode,
+            "recommended_mode": recommended_energy_mode,
             "sample_minutes": int(round(HVAC_HOURS_PER_SAMPLE * 60)),
         },
         "input": {
@@ -1743,9 +1995,27 @@ def compute_tempreture_recomendation_energy_for_room(
     for row, scaled in zip(target_rows, predictions):
         recommended_setpoint = float(scaled) * (setpoint_max - setpoint_min) + setpoint_min
         recommended_setpoint = round(min(max(recommended_setpoint, setpoint_min), setpoint_max) * 2) / 2
-        current_power_w = float(estimate_hvac_power(row))
+        room_temp = float(row.get("room_temp") or 0.0)
+        outside_temp = float(row.get("outside_temp") or 0.0)
+        current_setpoint = float(row.get("setpoint") or 0.0)
+        current_energy_mode = _energy_estimation_mode(
+            room_temp,
+            current_setpoint,
+            outside_temp,
+            str(row.get("hvac_mode") or "Unknown"),
+        )
+        current_row = row.copy()
+        current_row["hvac_mode"] = current_energy_mode
+        current_power_w = float(estimate_hvac_power(current_row))
         recommended_row = row.copy()
         recommended_row["setpoint"] = recommended_setpoint
+        recommended_energy_mode = _energy_estimation_mode(
+            room_temp,
+            recommended_setpoint,
+            outside_temp,
+            current_energy_mode,
+        )
+        recommended_row["hvac_mode"] = recommended_energy_mode
         recommended_power_w = float(estimate_hvac_power(recommended_row))
         current_wh = current_power_w * HVAC_HOURS_PER_SAMPLE
         recommended_wh = recommended_power_w * HVAC_HOURS_PER_SAMPLE
@@ -1760,6 +2030,8 @@ def compute_tempreture_recomendation_energy_for_room(
                 "outside_temp": float(row.get("outside_temp") or 0.0),
                 "current_setpoint": float(row.get("setpoint") or 0.0),
                 "recommended_setpoint": recommended_setpoint,
+                "current_energy_mode": current_energy_mode,
+                "recommended_energy_mode": recommended_energy_mode,
                 "current_power_w": current_power_w,
                 "recommended_power_w": recommended_power_w,
                 "current_wh": current_wh,

@@ -1,0 +1,13 @@
+Lighting Recommendation Transformer
+===================================
+
+Parsed metrics:
+- mae: 0.649
+- rmse: 1.57
+- r2: 0.993
+- target_saving_pct: 32.32
+- model_saving_pct: 32.73
+
+report: AIModelsAndAlgorithms/LightingRecommendation/transformer/lighting_recommendation_transformer_report.txt
+predictions: AIModelsAndAlgorithms/LightingRecommendation/transformer/lighting_recommendation_transformer_sample_predictions.csv
+metadata: AIModelsAndAlgorithms/LightingRecommendation/transformer/lighting_recommendation_transformer_metadata.json

@@ -1546,6 +1546,7 @@ def get_lightning_recommendation():
                 **payload,
                 'lookback_hours': 1,
                 'horizon_minutes': 60,
+                'occupancy_model_type': payload.get('occupancy_model_type') or 'transformer',
             })
             persona_result = predict_lighting_persona(payload)
             payload = {
@@ -1612,6 +1613,7 @@ def get_tempreture_recomendation():
                 **payload,
                 'lookback_hours': 1,
                 'horizon_minutes': 60,
+                'occupancy_model_type': payload.get('occupancy_model_type') or 'transformer',
             })
             persona_result = predict_tempreture_persona(payload)
             payload = {

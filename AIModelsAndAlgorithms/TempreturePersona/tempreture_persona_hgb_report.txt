@@ -1,0 +1,11 @@
+                 precision    recall  f1-score   support
+
+AlwaysOnComfort     0.6429    0.5246    0.5777       875
+    EnergySaver     1.0000    1.0000    1.0000      2446
+   Housekeeping     1.0000    1.0000    1.0000        38
+Preconditioning     1.0000    1.0000    1.0000       157
+       Reactive     0.8761    0.9202    0.8976      3196
+
+       accuracy                         0.9000      6712
+      macro avg     0.9038    0.8890    0.8951      6712
+   weighted avg     0.8944    0.9000    0.8962      6712

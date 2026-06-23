@@ -1,0 +1,15 @@
+Temperature Recommendation Transformer
+======================================
+
+Parsed metrics:
+- mae: 0.945
+- rmse: 1.209
+- r2: 0.775
+- target_saving_pct: 37.33
+- model_saving_pct: 18.85
+- target_mean_comfort_gap_c: 2.85
+- model_mean_comfort_gap_c: 1.905
+
+report: AIModelsAndAlgorithms/TempretureRecomendation/transformer/tempreture_recomendation_transformer_report.txt
+predictions: AIModelsAndAlgorithms/TempretureRecomendation/transformer/tempreture_recomendation_transformer_sample_predictions.csv
+metadata: AIModelsAndAlgorithms/TempretureRecomendation/transformer/tempreture_recomendation_transformer_metadata.json

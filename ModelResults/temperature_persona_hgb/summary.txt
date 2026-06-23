@@ -1,0 +1,7 @@
+Temperature Persona HistGradientBoostingClassifier
+==================================================
+
+report: AIModelsAndAlgorithms/TempreturePersona/tempreture_persona_hgb_report.txt
+confusion: AIModelsAndAlgorithms/TempreturePersona/tempreture_persona_hgb_confusion_matrix.csv
+predictions: AIModelsAndAlgorithms/TempreturePersona/tempreture_persona_hgb_sample_predictions.csv
+metadata: AIModelsAndAlgorithms/TempreturePersona/tempreture_persona_hgb_metadata.json

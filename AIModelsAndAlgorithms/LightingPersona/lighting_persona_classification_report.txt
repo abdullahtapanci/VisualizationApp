@@ -1,11 +1,11 @@
               precision    recall  f1-score   support
 
-    Balanced      0.830     0.878     0.853       556
-NightFocused      0.893     0.883     0.888       283
-     Routine      0.907     0.826     0.865       746
-StaticBright      0.910     0.956     0.932       360
-   StaticDim      0.902     0.956     0.928       338
+    Balanced      0.500     0.500     0.500         2
+NightFocused      0.000     0.000     0.000         1
+     Routine      0.500     0.333     0.400         3
+StaticBright      0.667     0.667     0.667         3
+   StaticDim      0.333     1.000     0.500         1
 
-    accuracy                          0.885      2283
-   macro avg      0.888     0.900     0.893      2283
-weighted avg      0.886     0.885     0.885      2283
+    accuracy                          0.500        10
+   macro avg      0.400     0.500     0.413        10
+weighted avg      0.483     0.500     0.470        10
