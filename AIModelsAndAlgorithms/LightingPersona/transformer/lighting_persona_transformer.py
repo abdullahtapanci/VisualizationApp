@@ -1,9 +1,8 @@
 """Transformer model for lighting persona prediction.
 
-This script trains a sequence model on room-day lighting behavior. Each
-example is one room on one day, represented as 288 five-minute time steps.
-At every time step the model sees per-lamp levels plus activity/context
-features, then predicts the dominant ``lightning_persona`` for that room-day.
+This trainer builds many rolling lighting-history windows instead of one
+full-day sample per room. That gives the model enough examples to learn
+persona behavior and matches the short-history inference path used by the app.
 """
 
 from __future__ import annotations
@@ -25,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[3]
 DATA = ROOT / "Data"
 OUT = Path(__file__).resolve().parent
 
-SEQ_LEN = 288
+DEFAULT_SEQ_LEN = 24
 SEED = 42
 
 DEFAULT_LAMPS = [
@@ -42,6 +41,15 @@ DEFAULT_LAMPS = [
     "table",
 ]
 
+CONTEXT_COLS = [
+    "pir_motion",
+    "n_occupants",
+    "active_actors",
+    "hurry_morning",
+    "lazy_day",
+    "forgetful",
+]
+
 
 def set_seed(seed: int) -> None:
     np.random.seed(seed)
@@ -55,7 +63,7 @@ def dominant_value(series: pd.Series):
     return modes.iat[0] if len(modes) else np.nan
 
 
-def build_room_day_sequences(max_rows: int | None = None) -> tuple[np.ndarray, np.ndarray, list[str]]:
+def load_lighting_frame(max_rows: int | None = None) -> pd.DataFrame:
     usecols = [
         "timestamp",
         "room_number",
@@ -77,49 +85,75 @@ def build_room_day_sequences(max_rows: int | None = None) -> tuple[np.ndarray, n
         nrows=max_rows,
     )
     df = df[df["reservation_active"].eq("Yes")].copy()
-    df = df.dropna(subset=["timestamp", "lightning_persona"])
-    df["date"] = df["timestamp"].dt.date
-    df["sample_id"] = df["room_number"].astype(str) + "|" + df["date"].astype(str)
-    df["slot"] = df["timestamp"].dt.hour * 12 + df["timestamp"].dt.minute // 5
+    df = df.dropna(subset=["timestamp", "room_number", "lightning_persona"])
+    df["slot_time"] = df["timestamp"].dt.floor("5min")
     df["Value"] = pd.to_numeric(df["Value"], errors="coerce").fillna(0).clip(0, 80) / 80.0
-
-    for col in ["pir_motion", "n_occupants", "active_actors", "hurry_morning", "lazy_day", "forgetful"]:
+    for col in CONTEXT_COLS:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+    return df
 
-    target = df.groupby("sample_id")["lightning_persona"].agg(dominant_value).dropna()
-    sample_ids = target.index.tolist()
-    slot_index = pd.MultiIndex.from_product(
-        [sample_ids, range(SEQ_LEN)],
-        names=["sample_id", "slot"],
-    )
+
+def build_step_frame(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    keys = ["room_number", "slot_time"]
 
     lamp_df = df[df["lamp_location"].ne("none")].copy()
     lamp_profile = (
-        lamp_df.groupby(["sample_id", "slot", "lamp_location"])["Value"]
+        lamp_df.groupby(keys + ["lamp_location"])["Value"]
         .mean()
         .unstack(fill_value=0.0)
         .reindex(columns=DEFAULT_LAMPS, fill_value=0.0)
     )
-    lamp_profile = lamp_profile.reindex(slot_index, fill_value=0.0)
 
-    context_cols = ["pir_motion", "n_occupants", "active_actors", "hurry_morning", "lazy_day", "forgetful"]
-    context_profile = df.groupby(["sample_id", "slot"])[context_cols].mean()
-    context_profile = context_profile.reindex(slot_index, fill_value=0.0)
+    context_profile = df.groupby(keys)[CONTEXT_COLS].mean()
+    target_profile = df.groupby(keys)["lightning_persona"].agg(dominant_value).rename("target")
 
-    slots = np.tile(np.arange(SEQ_LEN), len(sample_ids))
-    time_profile = pd.DataFrame(
-        {
-            "hour_sin": np.sin(2 * np.pi * (slots // 12) / 24),
-            "hour_cos": np.cos(2 * np.pi * (slots // 12) / 24),
-        },
-        index=slot_index,
-    )
+    step = pd.concat([lamp_profile, context_profile, target_profile], axis=1).reset_index()
+    step = step.dropna(subset=["target"])
+    step = step.sort_values(["room_number", "slot_time"]).reset_index(drop=True)
+    step["hour_sin"] = np.sin(2 * np.pi * step["slot_time"].dt.hour / 24)
+    step["hour_cos"] = np.cos(2 * np.pi * step["slot_time"].dt.hour / 24)
 
-    features = pd.concat([lamp_profile, context_profile, time_profile], axis=1)
-    feature_names = list(features.columns)
-    x = features.to_numpy(dtype=np.float32).reshape(len(sample_ids), SEQ_LEN, len(feature_names))
-    y = target.to_numpy()
-    return x, y, feature_names
+    feature_names = DEFAULT_LAMPS + CONTEXT_COLS + ["hour_sin", "hour_cos"]
+    step[feature_names] = step[feature_names].fillna(0).astype("float32")
+    return step, feature_names
+
+
+def build_rolling_sequences(
+    max_rows: int | None = None,
+    max_sequences: int | None = None,
+    sequence_length: int = DEFAULT_SEQ_LEN,
+    stride: int = 6,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
+    df = load_lighting_frame(max_rows=max_rows)
+    step, feature_names = build_step_frame(df)
+
+    xs: list[np.ndarray] = []
+    ys: list[str] = []
+    end_times: list[pd.Timestamp] = []
+    features = step[feature_names].to_numpy(dtype=np.float32)
+
+    for _, group in step.groupby("room_number", sort=False):
+        idx = group.index.to_numpy()
+        if len(idx) < sequence_length:
+            continue
+        for end in range(sequence_length - 1, len(idx), stride):
+            window_idx = idx[end - sequence_length + 1 : end + 1]
+            xs.append(features[window_idx])
+            ys.append(str(step.at[idx[end], "target"]))
+            end_times.append(pd.Timestamp(step.at[idx[end], "slot_time"]))
+            if max_sequences is not None and len(xs) >= max_sequences:
+                break
+        if max_sequences is not None and len(xs) >= max_sequences:
+            break
+
+    if not xs:
+        raise ValueError("No training sequences were built. Try a larger max-rows value or shorter sequence length.")
+
+    x = np.stack(xs).astype(np.float32)
+    y = np.asarray(ys, dtype=object)
+    times = np.asarray(end_times, dtype="datetime64[ns]")
+    order = np.argsort(times)
+    return x[order], y[order], times[order], feature_names
 
 
 class LightingPersonaTransformer(nn.Module):
@@ -127,7 +161,7 @@ class LightingPersonaTransformer(nn.Module):
         self,
         input_dim: int,
         n_classes: int,
-        seq_len: int = SEQ_LEN,
+        seq_len: int,
         d_model: int = 96,
         n_heads: int = 4,
         n_layers: int = 3,
@@ -173,7 +207,12 @@ def train(args: argparse.Namespace) -> None:
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    x, y_str, feature_names = build_room_day_sequences(max_rows=args.max_rows)
+    x, y_str, end_times, feature_names = build_rolling_sequences(
+        max_rows=args.max_rows,
+        max_sequences=args.max_sequences,
+        sequence_length=args.sequence_length,
+        stride=args.stride,
+    )
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(y_str)
     classes = list(label_encoder.classes_)
@@ -189,7 +228,7 @@ def train(args: argparse.Namespace) -> None:
     model = LightingPersonaTransformer(
         input_dim=x.shape[-1],
         n_classes=len(classes),
-        seq_len=SEQ_LEN,
+        seq_len=args.sequence_length,
         d_model=args.d_model,
         n_heads=args.n_heads,
         n_layers=args.n_layers,
@@ -204,7 +243,11 @@ def train(args: argparse.Namespace) -> None:
         batch_size=args.batch_size,
         shuffle=True,
     )
-    x_test_tensor = torch.from_numpy(x_test).to(device)
+    test_loader = DataLoader(
+        TensorDataset(torch.from_numpy(x_test), torch.from_numpy(y_test).long()),
+        batch_size=args.batch_size,
+        shuffle=False,
+    )
 
     best_acc = -1.0
     best_state = None
@@ -223,8 +266,12 @@ def train(args: argparse.Namespace) -> None:
             total_loss += loss.item() * batch_x.size(0)
 
         model.eval()
+        preds = []
         with torch.no_grad():
-            pred = model(x_test_tensor).argmax(dim=1).cpu().numpy()
+            for batch_x, _ in test_loader:
+                logits = model(batch_x.to(device))
+                preds.append(logits.argmax(dim=1).cpu().numpy())
+        pred = np.concatenate(preds)
         acc = float((pred == y_test).mean())
         if acc > best_acc:
             best_acc = acc
@@ -233,21 +280,29 @@ def train(args: argparse.Namespace) -> None:
         if epoch == 1 or epoch % args.print_every == 0 or epoch == args.epochs:
             print(f"epoch {epoch:03d} train_loss={total_loss / len(x_train):.4f} test_acc={acc:.3f}")
 
+    if best_state is None:
+        raise RuntimeError("Training finished without a saved model state.")
+
     model.load_state_dict(best_state)
     model.to(device)
     model.eval()
+    preds = []
     with torch.no_grad():
-        y_pred = model(x_test_tensor).argmax(dim=1).cpu().numpy()
+        for batch_x, _ in test_loader:
+            logits = model(batch_x.to(device))
+            preds.append(logits.argmax(dim=1).cpu().numpy())
+    y_pred = np.concatenate(preds)
 
+    all_label_ids = list(range(len(classes)))
     report = classification_report(
         y_test,
         y_pred,
-        labels=list(range(len(classes))),
+        labels=all_label_ids,
         target_names=classes,
         digits=3,
         zero_division=0,
     )
-    confusion = confusion_matrix(y_test, y_pred, labels=range(len(classes)))
+    confusion = confusion_matrix(y_test, y_pred, labels=all_label_ids)
     cm_df = pd.DataFrame(confusion, index=classes, columns=classes)
     cm_df.index.name = "true"
 
@@ -261,8 +316,10 @@ def train(args: argparse.Namespace) -> None:
             f"samples: {len(x):,}",
             f"train samples: {len(x_train):,}",
             f"test samples: {len(x_test):,}",
-            f"sequence length: {SEQ_LEN}",
+            f"sequence length: {args.sequence_length}",
+            f"stride: {args.stride}",
             f"input features: {len(feature_names)}",
+            f"time range: {pd.Timestamp(end_times.min())} to {pd.Timestamp(end_times.max())}",
             f"best test accuracy: {best_acc:.3f}",
             "",
             report,
@@ -275,7 +332,7 @@ def train(args: argparse.Namespace) -> None:
             "model_state_dict": best_state,
             "classes": classes,
             "feature_names": feature_names,
-            "seq_len": SEQ_LEN,
+            "seq_len": args.sequence_length,
             "input_dim": x.shape[-1],
             "config": {
                 "d_model": args.d_model,
@@ -292,7 +349,8 @@ def train(args: argparse.Namespace) -> None:
             {
                 "classes": classes,
                 "feature_names": feature_names,
-                "seq_len": SEQ_LEN,
+                "seq_len": args.sequence_length,
+                "stride": args.stride,
                 "input_dim": x.shape[-1],
                 "model_file": model_path.name,
                 "report_file": report_path.name,
@@ -312,8 +370,11 @@ def train(args: argparse.Namespace) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-rows", type=int, default=None, help="Optional row limit for quick experiments.")
+    parser.add_argument("--max-sequences", type=int, default=None, help="Optional sequence limit for memory control.")
+    parser.add_argument("--sequence-length", type=int, default=DEFAULT_SEQ_LEN)
+    parser.add_argument("--stride", type=int, default=6, help="Use every Nth 5-minute step as a sequence end.")
     parser.add_argument("--epochs", type=int, default=35)
-    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-2)
     parser.add_argument("--d-model", type=int, default=96)
